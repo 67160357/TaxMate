@@ -1,0 +1,31 @@
+Taxmate — เริ่มใช้งานที่นี่
+
+เปิดในเครื่อง Windows
+1. ติดตั้ง Node.js 24 LTS จาก https://nodejs.org
+2. แตก ZIP ให้ครบก่อน
+3. ดับเบิลคลิก run-local.bat (ครั้งแรกต้องมีอินเทอร์เน็ต)
+4. เปิด http://localhost:3000 เมื่อขึ้น Taxmate ready
+5. เลือกทดลองด้วยข้อมูลตัวอย่าง หรือสมัครสมาชิก
+
+เปิดบน GitHub Pages โดยไม่เช่า server
+1. สร้าง repository ของคุณ เช่น taxmate
+2. อัปโหลดไฟล์ข้างในโฟลเดอร์นี้ทั้งหมด ไม่ใช่ ZIP
+3. Settings > Pages > Deploy from a branch
+4. เลือก main และ /docs แล้ว Save
+5. เปิด URL จริงที่ GitHub แสดง รอให้ deploy เสร็จก่อน
+
+ใน README.md มีคู่มือเต็ม และวิธีใช้ GitHub Actions อัตโนมัติ
+
+GitHub Pages = โหมดสาธิต ข้อมูลอยู่ในเบราว์เซอร์
+Local = frontend + backend + SQLite ในเครื่อง
+การทำงานบน Pages ไม่ต้องเปิด run-local.bat ค้างไว้
+
+ระบบนี้เป็นต้นแบบที่ใช้งาน flow หลักได้ ไม่ได้ยื่นภาษีจริง
+คำนวณเงินเดือน ม.40(1) ปีภาษี 2568 และค่าลดหย่อนเฉพาะหมวดที่รองรับ
+ไม่ครอบคลุมภาษีทุกกรณี ตรวจ README ก่อนใช้ตัวเลข
+
+sample-data/demo-backup.json = ข้อมูลสมมติสำหรับนำเข้าหน้าตั้งค่า
+sample-data/sample-receipt.png = รูปบิลสมมติสำหรับลอง OCR
+
+หากแก้ source ให้ npm run build ก่อนอัปโหลด docs ใหม่
+ไม่ต้อง commit node_modules, backend/data หรือข้อมูลส่วนตัว

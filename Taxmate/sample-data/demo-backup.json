@@ -1,0 +1,77 @@
+{
+  "version": 1,
+  "taxYear": 2025,
+  "profile": {
+    "salary": 600000,
+    "bonus": 50000,
+    "withheld": 25000
+  },
+  "receipts": [
+    {
+      "merchant": "มูลนิธิเพื่อการศึกษา",
+      "amount": 2500,
+      "date": "2025-09-16",
+      "category": "special",
+      "verified": false,
+      "id": "seed-0",
+      "notes": "ข้อมูลสมมติสำหรับทดลองใช้งาน",
+      "image": "",
+      "ocrText": ""
+    },
+    {
+      "merchant": "ประกันสุขภาพประจำปี",
+      "amount": 18000,
+      "date": "2025-09-12",
+      "category": "health",
+      "verified": true,
+      "id": "seed-1",
+      "notes": "ข้อมูลสมมติสำหรับทดลองใช้งาน",
+      "image": "",
+      "ocrText": ""
+    },
+    {
+      "merchant": "Everyday Coffee",
+      "amount": 185,
+      "date": "2025-09-10",
+      "category": "food",
+      "verified": false,
+      "id": "seed-2",
+      "notes": "ข้อมูลสมมติสำหรับทดลองใช้งาน",
+      "image": "",
+      "ocrText": ""
+    },
+    {
+      "merchant": "มูลนิธิสาธารณกุศล (ตัวอย่าง)",
+      "amount": 1500,
+      "date": "2025-09-08",
+      "category": "donation",
+      "verified": true,
+      "id": "seed-3",
+      "notes": "ข้อมูลสมมติสำหรับทดลองใช้งาน",
+      "image": "",
+      "ocrText": ""
+    },
+    {
+      "merchant": "หนังสือและอุปกรณ์ทำงาน",
+      "amount": 2490,
+      "date": "2025-09-04",
+      "category": "shopping",
+      "verified": false,
+      "id": "seed-4",
+      "notes": "ข้อมูลสมมติสำหรับทดลองใช้งาน",
+      "image": "",
+      "ocrText": ""
+    },
+    {
+      "merchant": "ประกันชีวิตประจำปี",
+      "amount": 24000,
+      "date": "2025-08-28",
+      "category": "life",
+      "verified": true,
+      "id": "seed-5",
+      "notes": "ข้อมูลสมมติสำหรับทดลองใช้งาน",
+      "image": "",
+      "ocrText": ""
+    }
+  ]
+}
