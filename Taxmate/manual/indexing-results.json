@@ -1,0 +1,60 @@
+{
+  "measuredAt": "2026-10-09T12:48:44.001Z",
+  "synthetic": true,
+  "rows": 300000,
+  "users": 1000,
+  "node": "v24.19.0",
+  "sqlite": "3.53.3",
+  "cpu": "INTEL(R) XEON(R) PLATINUM 8573C",
+  "query": "SELECT id,receipt_date,amount FROM receipts WHERE user_id=? AND receipt_date>=? AND receipt_date<=? ORDER BY receipt_date DESC,id LIMIT 20",
+  "parameters": [
+    "u42",
+    "2025-03-01",
+    "2025-12-31"
+  ],
+  "warmups": 5,
+  "repetitions": 50,
+  "generationMs": 389.00638299999997,
+  "indexBuildMs": 182.80413299999987,
+  "before": {
+    "medianMs": 11.914250999999922,
+    "p95Ms": 18.620303000000035,
+    "meanMs": 12.777470400000004,
+    "rowsReturned": 20,
+    "plan": [
+      {
+        "id": 4,
+        "parent": 0,
+        "notused": 216,
+        "detail": "SCAN receipts"
+      },
+      {
+        "id": 23,
+        "parent": 0,
+        "notused": 0,
+        "detail": "USE TEMP B-TREE FOR ORDER BY"
+      }
+    ]
+  },
+  "after": {
+    "medianMs": 0.017326000000025488,
+    "p95Ms": 0.052255000000059226,
+    "meanMs": 0.02276526000002377,
+    "rowsReturned": 20,
+    "plan": [
+      {
+        "id": 5,
+        "parent": 0,
+        "notused": 55,
+        "detail": "SEARCH receipts USING INDEX idx_receipts_user_date (user_id=? AND receipt_date>? AND receipt_date<?)"
+      }
+    ]
+  },
+  "speedup": 687.6515641222668,
+  "insertBatchRows": 5000,
+  "insertBeforeMs": 5.103098999999929,
+  "insertAfterMs": 28.869597000000113,
+  "sizeBeforeBytes": 10186752,
+  "sizeAfterBytes": 18538496,
+  "notes": "Measured locally on deterministic synthetic data; warmed reads, no concurrency. 5,000 write timings exclude commit and are rolled back. Results are workload/hardware-specific, not guaranteed production speed."
+}

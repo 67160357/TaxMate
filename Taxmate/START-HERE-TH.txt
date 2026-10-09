@@ -1,4 +1,4 @@
-Taxmate — เริ่มใช้งานที่นี่
+Taxmate v2 — เริ่มใช้งานที่นี่
 
 เปิดในเครื่อง Windows
 1. ติดตั้ง Node.js 24 LTS จาก https://nodejs.org
@@ -29,3 +29,15 @@ sample-data/sample-receipt.png = รูปบิลสมมติสำหร�
 
 หากแก้ source ให้ npm run build ก่อนอัปโหลด docs ใหม่
 ไม่ต้อง commit node_modules, backend/data หรือข้อมูลส่วนตัว
+
+ฟังก์ชันเพิ่ม v2
+- เปิด create-admin.bat หลังติดตั้ง dependencies เพื่อสร้าง admin คนแรก
+- admin เข้าหน้าจัดการผู้ใช้ แล้วเปลี่ยนผู้สมัครเป็น expert ได้
+- เจ้าของเปิดบิล เลือก expert และส่งตรวจ; ดูผล/ถอนสิทธิ์ในหน้าปรึกษา
+- ตั้งค่าบัญชี: แก้ username/name/email และเปลี่ยนรหัสผ่าน
+- Indexing lab: npm run lab:index -- --rows=300000
+- คู่มือ API และตารางสิทธิ์: manual/API.md
+- Postman: manual/Taxmate.postman_collection.json
+- แบบฝึกนิสิต: manual/INDEXING-LAB.md
+- กฎและหลักฐานจากกรมสรรพากร: manual/TAX-RULES-2568.md
+- admin/expert และเปลี่ยนรหัสผ่านใช้ Local API; Pages ไม่มี backend จึงไม่บังคับสิทธิ์จริง

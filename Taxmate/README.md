@@ -4,6 +4,23 @@
 
 > นี่คือ functional prototype สำหรับทดลอง ไม่ใช่บริการยื่นภาษีจริง และไม่ใช่ระบบภาษีครบทุกกรณี เครื่องคำนวณจำกัดที่ผู้มีเงินเดือน ม.40(1) ปีภาษี 2568 และหมวดสิทธิที่ระบุด้านล่าง ใช้ข้อมูลสมมติในการสาธิต
 
+## เพิ่มเติมในเวอร์ชัน 2.0
+
+- Authentication และ User Management ครบ 10 endpoints ตามโจทย์ ทั้ง root และ `/api` พร้อม pagination, username availability และเปลี่ยนรหัสผ่าน
+- บทบาท user / expert / admin ตรวจสิทธิ์ที่ backend; หน้าจัดการผู้ใช้ แก้ role/status และลบบัญชี; session ถูกยกเลิกเมื่อเปลี่ยนสิทธิ์/รหัสผ่าน
+- ส่งบิลให้ expert เฉพาะราย ผู้ใช้ถอนสิทธิ์ได้; ผลตรวจแยกจากการยืนยันใช้สิทธิของเจ้าของ
+- SQLite schema migration v2 และ composite indexes; บิลแบ่งหน้าและโหลดรูปเมื่อเปิด สรุปรวมครบทุกบิล
+- Indexing lab ข้อมูลสังเคราะห์ 300,000 แถว พร้อม EXPLAIN QUERY PLAN และผลวัดจริงก่อน/หลัง
+- Ruleset อ้างคู่มือ ภ.ง.ด.91 ปี 2568 อย่างเจาะจง พร้อมสถานะข้อมูลไม่ครบและคู่มือ mapping กฎกับแหล่งทางการ
+
+เอกสาร: [API + RBAC](manual/API.md) · [แบบฝึก Indexing](manual/INDEXING-LAB.md) · [ผลทดลอง](manual/INDEXING-RESULTS.md) · [กฎภาษีทางการ](manual/TAX-RULES-2568.md) · [Postman collection](manual/Taxmate.postman_collection.json)
+
+สร้างผู้ดูแลระบบครั้งแรก: `npm run create-admin` หรือ `create-admin.bat` กรอกรหัสผ่านของคุณเอง ไม่มีบัญชี admin สำเร็จรูป จากนั้น login → จัดการผู้ใช้ → แต่งตั้ง expert ที่สมัครไว้แล้ว บัญชีทั่วไปสมัครเป็น user เท่านั้น
+
+ทดลองฐานข้อมูล: `npm run lab:index -- --rows=300000` แล้วอ่านผลใน manual หรือหน้า **ทดลอง Indexing** ของ admin
+
+อัปเดตจาก v1: หยุด server และสำรองโฟลเดอร์ `backend/data/` ก่อนแทน source ด้วยเวอร์ชันนี้ จากนั้นคงโฟลเดอร์ข้อมูลเดิมไว้ เมื่อเริ่ม server ระบบเพิ่มคอลัมน์และ index อัตโนมัติ รักษาบิล/บัญชีเดิม บัญชีเก่าได้ username `legacy_...` และ role=user เข้าด้วยอีเมลเดิมได้ แล้วแก้ username ในตั้งค่า สร้าง admin ด้วย CLI อีกครั้ง ห้ามอัปโหลดฐานข้อมูลขึ้น GitHub
+
 ## เปิดในเครื่อง Windows — ทางที่ง่ายที่สุด
 
 1. ติดตั้ง **Node.js 24 LTS หรือใหม่กว่า** จาก https://nodejs.org
@@ -70,7 +87,8 @@ git push -u origin main
 | สมัครสมาชิก / login | จำลองในเบราว์เซอร์ | Express API + SQLite |
 | เก็บบิลและรูป | IndexedDB แยกตามบัญชีจำลอง | SQLite แยกตาม user ID |
 | อุปกรณ์อื่นเห็นข้อมูลเดียวกัน | ไม่ได้ | ไม่ได้โดยอัตโนมัติ |
-| ยืนยันตัวตนสำหรับบริการจริง | ไม่ใช่ | local prototype; scrypt + HttpOnly session |
+| แบ่งสิทธิ์ admin/user/expert | ไม่มี security boundary ฝั่ง server | บังคับสิทธิ์ใน API จริง |
+| เปลี่ยนรหัสผ่าน/จัดการผู้ใช้/ตรวจบิล | ให้ใช้ Local | มี |
 | OCR ไทย + อังกฤษ | ประมวลผลใน browser | ประมวลผลใน browser |
 | ข้อมูลตัวอย่าง | เปิด dashboard ได้ทันที | ปุ่มทดลองที่หน้า login |
 | รายงาน CSV / พิมพ์ PDF / backup JSON | มี | มี |
@@ -90,7 +108,10 @@ GitHub Pages เป็น static hosting จึงรัน Node.js, Express, SQ
 | `#/reports` | สรุป ดาวน์โหลด CSV และ Print / Save as PDF |
 | `#/guide` | วิธีใช้งาน ข้อจำกัด และลิงก์กรมสรรพากร |
 | `#/settings` | บัญชี สำรอง/นำเข้า JSON รวมรูป และล้างข้อมูลบัญชี |
-| หน้าสมาชิก | สมัคร เข้าสู่ระบบ ซ่อน/แสดงรหัสผ่าน ออกจากระบบ |
+| หน้าสมาชิก | สมัครด้วย username/email เข้าสู่ระบบ ออกจากระบบ |
+| `#/reviews` | ส่งตรวจ/ผลตรวจ; expert เห็นงานที่มอบหมาย |
+| `#/admin/users` | admin ค้นผู้ใช้ แบ่งหน้า แก้ไขสิทธิ์และลบ |
+| `#/admin/indexing` | admin ดู index SQL, plan และผลวัด lab |
 
 ## การถ่ายบิลและ OCR
 
@@ -117,12 +138,7 @@ GitHub Pages เป็น static hosting จึงรัน Node.js, Express, SQ
 - บิลซื้อของ/บริจาคพิเศษเก็บได้ แต่ไม่ให้สิทธิอัตโนมัติ ไม่เชื่อม e-Donation หรือกรมสรรพากร และไม่ยื่นแบบแทนผู้ใช้
 - ห้ามนำผลไปตีความว่าเป็นการยืนยันสิทธิหรือจำนวนภาษีสุดท้าย ต้องตรวจข้อมูลและสิทธิที่ยังไม่รองรับก่อนยื่นจริง
 
-หลักเกณฑ์อ้างอิง:
-- https://www.rd.go.th/62777.html — หลักเกณฑ์ค่าลดหย่อน
-- https://www.rd.go.th/59670.html — อัตราภาษีตั้งแต่ 2560
-- https://docs.github.com/en/pages/getting-started-with-github-pages/what-is-github-pages — ขอบเขต GitHub Pages
-
-กฎในโค้ดเป็น baseline สำหรับ demo ปี 2568 ไม่ได้อ้างว่ารองรับทุกประกาศของปี 2568 หรือปี 2569 เอกสารอ้างอิงบางหน้าเผยแพร่ก่อนปีภาษีดังกล่าว
+หลักเกณฑ์อ้างอิง: [วิธีกรอก ภ.ง.ด.91 ปีภาษี 2568 ของกรมสรรพากร](https://www.rd.go.th/fileadmin/tax_pdf/pit/2568/Ins91_241268.pdf) กฎ/เพดานที่ใช้เป็นข้อมูลทางการ ข้อมูลตัวอย่างใน demo เป็นข้อมูลสมมติ ดู mapping หน้าเอกสาร เงื่อนไขและข้อจำกัดใน `manual/TAX-RULES-2568.md` ตรวจแหล่งอ้างอิงเมื่อ 2026-10-09 รองรับเฉพาะปี2568 ไม่ใช้กฎข้ามปีและไม่อัปเดตอัตโนมัติ
 
 ## โครงสร้างสำหรับพัฒนาต่อ
 
@@ -131,7 +147,12 @@ frontend/src/main.jsx    React pages + components + HashRouter
 frontend/src/style.css   Design tokens, layout, responsive, print
 frontend/src/data.js     Browser / local API adapter
 frontend/public/        Static favicon
-backend/server.mjs      Express API, auth, SQLite schema and seed
+backend/server.mjs      Express API + ownership/RBAC
+backend/auth.mjs        Password hashing + sessions
+backend/db.mjs          SQLite migration v2 + indexes
+frontend/src/management.jsx User management, reviews, indexing UI
+scripts/indexing-lab.mjs Benchmark in isolated synthetic DB
+scripts/create-admin.mjs Bootstrap first admin
 backend/data/           Runtime database (gitignored)
 shared/tax.mjs          Rules, validation, OCR parser, demo data
 scripts/build-pages.mjs Copy static build to docs/

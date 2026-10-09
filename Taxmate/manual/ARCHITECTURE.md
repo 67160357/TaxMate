@@ -1,70 +1,51 @@
-# Taxmate architecture
+# Taxmate v2 architecture
 
-## Stack and runtime
+React 19 + React Router 7 (HashRouter) + Vite 6; Express 5, Node.js 24 built-in SQLite; Tesseract.js 6 Thai/English OCR. UI adapts through `frontend/src/data.js`: relative `/api/health` selects local mode, otherwise IndexedDB static demo. Role features require local mode.
 
-- React 19 / React Router 7 HashRouter / Vite 6, ESM source.
-- Express 5 REST API; Node.js 24+ built-in SQLite. No database server installation.
-- Browser IndexedDB fallback, with an adapter API matching the local server behavior.
-- Tesseract.js 6 OCR in a worker. Thai and English assets retrieved at first use.
-- CSS design tokens, semantic HTML, native dialog, responsive drawer and print styles.
+## Database and indexes
 
-## Data flow
+`backend/db.mjs` migrates v1 data in place to schema v2. Missing columns are detected with `PRAGMA table_xinfo`; indexes use IF NOT EXISTS. Old accounts retain IDs/passwords/profile/receipts and receive a valid `legacy_...` username plus user role. Back up the stopped DB directory before upgrades.
 
-1. Frontend probes relative `./api/health` with a timeout.
-2. Exact `app: taxmate` response selects local mode. Otherwise static demo mode.
-3. Local mode requires an authenticated session; static mode opens seeded demo data.
-4. Upload stays in frontend memory until user confirms. OCR suggests text/category; it never marks a deduction as confirmed.
-5. Shared validation runs before writes. Local mode revalidates on the server independently.
-6. Shared calculation ignores unverified, unsupported and out-of-year receipts, applies category/combined caps, then progressive tax.
-7. CSV excludes attachments; JSON backup includes attachments. Native browser Print supports PDF output.
-
-## Database schema
-
-| Table | Columns | Purpose |
+| Table | Key fields | Relationships |
 |---|---|---|
-| users | id PK, name, email UNIQUE, salt, password, profile JSON | Account + annual salary inputs |
-| receipts | id PK, user_id FK, data JSON | Receipt metadata + optional image data URL |
-| sessions | token SHA256 PK, user_id FK, expires epoch ms | 24h local sessions |
+| users | id PK, name, email UNIQUE, username UNIQUE NOCASE, role, status, salt, password hash, profile JSON, created_at | Account |
+| receipts | id PK, user_id FK, data JSON; virtual date/category/amount/verified columns | Owner; generated columns indexed |
+| sessions | token SHA256 PK, user_id FK, expires | 24-hour session |
+| reviews | id PK, receipt_id UNIQUE FK, owner_id FK, expert_id FK, status, comment, timestamps | Explicit owner consent, one expert per bill |
+| audit | id, actor_id, action, target_id, created_at | No FK so deleted-account action remains traceable |
 
-Foreign keys enabled, WAL journal mode; all queries parameterized. Receipt mutations require both receipt ID and authenticated user ID. Import validation finishes before a transaction replaces any data. Demo is a shared local account with a random, undisclosed password and an explicit `/auth/demo` action.
+Foreign keys ON with cascades; WAL, busy_timeout 5000ms. Values are parameterized. Dynamic SQL identifiers are selected from fixed internal choices, never interpolated from user input. See INDEXING-LAB.md for actual index/query mappings and limitations.
 
-### Browser database
+List endpoints return 20 rows by default, maximum100; receipt metadata strips images/OCR. Details load one owned/shared receipt. `/data` returns only100 recent metadata rows plus SQL aggregates across all owned receipts. Calculator previews use category totals, so tax results do not depend on the displayed page. CSV/JSON exports iterate rows and respect response backpressure. Backup can exceed import's 1,000-row/30MB browser limit; larger restoration needs a stopped full SQLite directory backup, not the browser importer.
 
-`taxmate-v1` IndexedDB, object store `store`:
-- `account:<email>`: name, email, salt, PBKDF2 hash
-- `data:<user-id>`: profile and receipt array
-- `taxmate-user` sessionStorage selects the demo identity
+## Authentication and authorization
 
-Browser-only identity is an interaction simulation, not an access-control boundary. All browser accounts on one browser profile can be inspected by the device user. PBKDF2 avoids casually storing cleartext passwords but does not make client-only auth secure.
+- scrypt + independent random salt; timing-safe hash comparison, dummy hash for unknown login.
+- Random 256-bit session token; only SHA256 digest stored. HttpOnly, SameSite=Strict cookie,24h. Local HTTP binding127.0.0.1; Secure flag required if adapted to HTTPS hosting.
+- Same-origin mutation check, JSON requirement, cross-site Fetch Metadata rejection; no open CORS.
+- Shared in-memory limiter30 requests/IP/minute on login/register/password-change/username availability aliases.
+- Registration always user. First admin created by physical local CLI; no embedded privileged credentials. Admin grants expert/admin roles.
+- Server checks active status and current role each request. Role/status/password changes revoke sessions; last active admin protected.
+- Owner-only receipts; admin manages accounts but does not get raw receipt access. Expert reads only an explicit review assigned to that expert. Revocation removes the review; expert demotion/disable removes assignments. Edits reset expert result to pending.
+- Expert result is advisory; receipt verified is a separate owner action.
+- Credentials, hashes, income, and receipt contents are excluded from public user responses and audit metadata.
 
-## Security and operation boundary
+Roles are enforced only through the API. Anyone with OS/file access to the local database can read it. This is a classroom/local application; not a multi-tenant production service.
 
-- Local binds only 127.0.0.1; users should not expose it publicly.
-- Password: Node scrypt with a per-user random 128-bit salt; timing-safe comparison.
-- Session: random 256-bit token, only digest stored; HttpOnly/SameSite Strict cookie; 24-hour expiration.
-- Cookie is HTTP local, so no Secure flag. A future HTTPS deployment must add it and review proxy behavior.
-- Reject foreign Origin and cross-site Fetch Metadata for mutations; JSON only, no wildcard CORS.
-- Authentication endpoints limited to 30 POST requests/IP/minute (prototype in-memory limiter).
-- Image types limited to PNG/JPEG/WebP data URL; no SVG. Data URL max 5.6M characters (~4 MiB); JSON body cap 35 MB.
-- React escapes text; no raw HTML insertion; CSV formula prefixes escaped.
-- Bulk import max 1,000 rows / frontend backup file 30 MB. Imported IDs replaced by generated IDs.
-- Not production-ready: no email verification/reset/MFA, distributed limiter, malware/content scanning, encrypted DB/backups, key management, tax authority integration, legal retention workflow or operational monitoring.
-- Live frontend metadata and image values are user-provided. An attestation means the user checked conditions, not that Taxmate verified their legal eligibility.
+## Browser-only mode
 
-## Static hosting
+IndexedDB `taxmate-v1` / store `store`: `account:<email>` has PBKDF2 salt/hash and username; `username:<name>` maps demo login; `data:<email>` contains profile/receipts; sessionStorage selects current demo user. Old email-based browser accounts can still log in. Browser-only identity has no server security boundary. Management/password-change/reviews/index-lab UI explicitly require Local API. Never put real financial data or reused passwords in a public demo.
 
-The build uses `base: './'` and hash navigation. It works at repository paths without a rewrite service. `npm run build` creates `dist/` and copies the same assets to `docs/`, including `.nojekyll`. GitHub Pages can deploy `/docs` directly or build through Actions and publish `dist/`.
+## Files and hosting
 
-No database or runtime attachment is committed or published. `.gitignore` excludes runtime databases and dependency folders. The static bundle contains only fictitious seed data.
+`shared/tax.mjs` is the same calculator/validator used on both sides; backend validates independently. `frontend/src/main.jsx` owns pages, `management.jsx` owns account/roles/reviews/lab. `manual/TAX-RULES-2568.md` maps implemented constants to official year-specific instructions; scope/warnings travel with calculation results.
 
-## Tax engine boundaries
+Vite uses relative assets and HashRouter for `/repository/#/page`. Build generates `dist/` and identical `docs/` including `.nojekyll`. GitHub workflow deploys only frontend. No SQLite runtime or session server runs on GitHub Pages. Secrets, cookies, dependency folders, runtime/lab DBs are gitignored.
 
-For salary income only: expense, personal allowance, life/health combined ceiling, mortgage ceiling, verified ordinary donation ceiling, progressive rates and withholding reconciliation. Base rules are deliberately conservative; special donation and shopping claims stay pending. Supported year is explicit (2025). Expanding to other years requires a reviewed ruleset rather than silently changing the display label.
+OCR downloads Tesseract language/worker assets on first use; processing stays on the browser device. Saving in local mode then sends the attachment to the local API. OCR/category suggestion never confirms a tax right.
 
-## Extending
+## Operating limits
 
-- Add routes/pages in `frontend/src/main.jsx` and sidebar `nav`.
-- Add categories/conditions in `shared/tax.mjs`; implement calculation and boundary tests together.
-- Replace `api` adapter for hosted backend or identity provider when moving beyond demo.
-- Use normalized attachment/object storage and pagination before a large archive.
-- Keep existing browser backup format migration-compatible; increase `version` for breaking changes.
+Image ≤4MiB; JSON body≤35MB; import≤1,000 rows and frontend file≤30MB. React escapes user text; SVG data URLs rejected; CSV formula prefixes escaped. No email verification/reset/MFA, production hardening, encrypted storage/backups, duplicate-bill validation, e-Donation verification, automatic law updates, or actual tax submission.
+
+For much larger concurrent production workloads: normalize attachment storage, choose a suitable asynchronous DB/service, measure FTS/keyset strategies, add production identity and secure hosting. Current lab demonstrates indexes; it does not certify production capacity.
