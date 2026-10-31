@@ -24,7 +24,14 @@ export function migrate(db){
  CREATE INDEX IF NOT EXISTS idx_reviews_owner ON reviews(owner_id,created_at DESC);
  CREATE TABLE IF NOT EXISTS audit(id INTEGER PRIMARY KEY,actor_id TEXT,action TEXT NOT NULL,target_id TEXT,created_at INTEGER NOT NULL);
  CREATE INDEX IF NOT EXISTS idx_audit_created ON audit(created_at DESC);
- PRAGMA user_version=2;`);db.exec('COMMIT');}catch(e){db.exec('ROLLBACK');throw e;}
+ CREATE TABLE IF NOT EXISTS expert_profiles(user_id TEXT PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,headline TEXT NOT NULL DEFAULT '',bio TEXT NOT NULL DEFAULT '',specialties TEXT NOT NULL DEFAULT '[]',experience_years INTEGER NOT NULL DEFAULT 0,credentials TEXT NOT NULL DEFAULT '',languages TEXT NOT NULL DEFAULT '[]',availability TEXT NOT NULL DEFAULT '',accepting INTEGER NOT NULL DEFAULT 1,published INTEGER NOT NULL DEFAULT 0,hidden_by_admin INTEGER NOT NULL DEFAULT 0,updated_at INTEGER NOT NULL);
+ CREATE INDEX IF NOT EXISTS idx_expert_profiles_listing ON expert_profiles(published,hidden_by_admin,updated_at DESC);
+ CREATE TABLE IF NOT EXISTS conversations(id TEXT PRIMARY KEY,user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,expert_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,created_at INTEGER NOT NULL,last_message_at INTEGER NOT NULL,user_read_id INTEGER NOT NULL DEFAULT 0,expert_read_id INTEGER NOT NULL DEFAULT 0,UNIQUE(user_id,expert_id),CHECK(user_id<>expert_id));
+ CREATE INDEX IF NOT EXISTS idx_conv_user ON conversations(user_id,last_message_at DESC);
+ CREATE INDEX IF NOT EXISTS idx_conv_expert ON conversations(expert_id,last_message_at DESC);
+ CREATE TABLE IF NOT EXISTS messages(id INTEGER PRIMARY KEY AUTOINCREMENT,conversation_id TEXT NOT NULL REFERENCES conversations(id) ON DELETE CASCADE,sender_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,body TEXT NOT NULL,created_at INTEGER NOT NULL);
+ CREATE INDEX IF NOT EXISTS idx_messages_conv ON messages(conversation_id,id);
+ PRAGMA user_version=3;`);db.exec('COMMIT');}catch(e){db.exec('ROLLBACK');throw e;}
 }
 export const publicUser=u=>({id:u.id,name:u.name,email:u.email,username:u.username,role:u.role,status:u.status,createdAt:u.created_at,demo:u.email==='demo@taxmate.local'});
 export const ROLES=['admin','user','expert'];

@@ -90,6 +90,7 @@ username ไม่สนตัวพิมพ์เล็กใหญ่: 3–32
 | GET /backup | JSON ของบิลทั้งหมดรวมรูป |
 | POST /import | profile + receipts ≤1000; validate ก่อน transaction แทนข้อมูลเดิม |
 | DELETE /data | ล้างบิลและรายได้ตนเอง ยังเก็บบัญชี |
+| GET /chat/status, POST /chat | ล็อกอิน; แชทบอทแบบผสม กฎ + LLM (ต้องตั้ง `ANTHROPIC_API_KEY` และผู้ใช้ยินยอม) ดู CHATBOT.md |
 
 `/api/auth/register`, `/api/auth/login`, `/api/auth/logout`, `/api/auth/me`, `/api/auth/change-password` เป็น alias รองรับ client เวอร์ชันเดิม (การสมัครใหม่ต้องมี username)
 
